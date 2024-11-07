@@ -4,8 +4,9 @@ from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
 # Инициализация бота
-token = os.getenv("VK_TOKEN")
-group_id = os.getenv("GROUP_ID")
+vk_session = vk_api.VkApi(token=os.getenv("VK_TOKEN"))
+vk = vk_session.get_api()
+longpoll = VkBotLongPoll(vk_session, os.getenv("GROUP_ID"))
 
 # Функция для отправки сообщений с клавиатурой
 def send_message(user_id, message, keyboard=None):
