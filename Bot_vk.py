@@ -1,11 +1,12 @@
 import vk_api
 from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
+import os
 
 # Инициализация бота
-vk_session = vk_api.VkApi(token='VK_TOKEN')
+vk_session = vk_api.VkApi(token=os.getenv("VK_TOKEN"))
 vk = vk_session.get_api()
-longpoll = VkBotLongPoll(vk_session, 'GROUP_ID')
+longpoll = VkBotLongPoll(vk_session, os.getenv("GROUP_ID"))
 
 # Функция для отправки сообщений с клавиатурой
 def send_message(user_id, message, keyboard=None):
@@ -24,6 +25,8 @@ def create_main_keyboard():
     keyboard.add_button('Производственная травма', color=VkKeyboardColor.NEGATIVE)
     keyboard.add_line()
     keyboard.add_button('Квиз', color=VkKeyboardColor.SECONDARY)
+    keyboard.add_line()
+    keyboard.add_button('Назад', color=VkKeyboardColor.SECONDARY)
     return keyboard
 
 # Создание клавиатуры для выбора травм у учащегося
@@ -32,57 +35,53 @@ def create_student_injury_keyboard():
     injuries = ['Ушиб головы', 'Ушиб ноги', 'Носовое кровотечение',
                 'Ушиб руки', 'Ушиб позвоночника', 'Защемление шеи',
                 'Царапина, порез', 'Обморок']
-    for i, injury in enumerate(injuries):
+    for injury in injuries:
         keyboard.add_button(injury, color=VkKeyboardColor.POSITIVE)
-        if (i + 1) % 4 == 0 and i != len(injuries) - 1:
-            keyboard.add_line()
+        keyboard.add_line()
     keyboard.add_button('Назад', color=VkKeyboardColor.SECONDARY)
     return keyboard
 
-# Функция для создания клавиатуры для квиза
-def create_quiz_keyboard(options):
-    keyboard = VkKeyboard(one_time=True)
-    for i, option in enumerate(options):
-        keyboard.add_button(option, color=VkKeyboardColor.PRIMARY)
-        if (i + 1) % 4 == 0 and i != len(options) - 1:
-            keyboard.add_line()
-    return keyboard
-
-# Словарь с вопросами и ответами для квиза
+# Квизовые вопросы
 quiz_questions = [
     {
-        'question': 'Какие действия нужно предпринять при ушибе головы?',
-        'options': ['Приложить холод', 'Наложить повязку', 'Оставить без внимания'],
-        'correct': 'Приложить холод'
+        'question': 'Какие действия необходимо предпринять при ушибе головы?',
+        'options': ['Положить пострадавшего в горизонтальное положение', 
+                    'Позвонить родителям', 
+                    'Немедленно вызвать полицию'],
+        'answer': 0
+    },
+    {
+        'question': 'Какое действие НЕ нужно делать при носовом кровотечении?',
+        'options': ['Наклонить голову вперед', 
+                    'Приложить холод к переносицы', 
+                    'Запрокинуть голову назад'],
+        'answer': 2
     },
     # Добавьте больше вопросов по аналогии
 ]
 
+# Функция для создания клавиатуры для квиза
+def create_quiz_keyboard(options):
+    keyboard = VkKeyboard(one_time=True)
+    for option in options:
+        keyboard.add_button(option, color=VkKeyboardColor.PRIMARY)
+        keyboard.add_line()
+    return keyboard
+
 # Основная функция для обработки событий
+user_quiz_progress = {}  # Словарь для отслеживания прогресса квиза пользователей
+
 for event in longpoll.listen():
     if event.type == VkBotEventType.MESSAGE_NEW and event.from_user:
         user_id = event.obj.message['from_id']
         text = event.obj.message['text'].strip().lower()
 
-        if text == 'начать':
+        # Обработка приветственных сообщений
+        if text in ['привет', 'здравствуйте', 'добрый день', 'добрый вечер']:
             send_message(
                 user_id,
                 'Здравствуйте! Я бот, созданный Полиной Максимовной.\n'
                 'Я помогу вам узнать, что делать в случае различных травм учащихся или сотрудников.\n'
-                'Вы можете:\n'
-                '- Узнать последовательность действий при травмах у учащихся.\n'
-                '- Получить инструкции по производственным травмам.\n'
-                'Выберите нужную опцию ниже:',
-                create_main_keyboard()
-            )
-
-        elif text in ['привет', 'здравствуйте', 'добрый день']:
-            send_message(
-                user_id,
-                'Здравствуйте! Я могу:\n'
-                '- Показать последовательность действий при травмах у учащихся.\n'
-                '- Дать инструкции по производственным травмам.\n'
-                '- Провести квиз на знание первой помощи.\n'
                 'Выберите нужную опцию ниже:',
                 create_main_keyboard()
             )
@@ -97,22 +96,13 @@ for event in longpoll.listen():
         elif text == 'производственная травма':
             send_message(
                 user_id,
-                'Действия при производственной травме:\n'
-                '1. Немедленно позвоните заместителю директора Зиновьевой Евгении Васильевне 89505654776, '
-                'если не отвечает, директору Матухно Наталье Николаевне 89042015742.\n'
-                '2. Оповестите родителей.\n'
-                '3. Вызовите скорую помощь при необходимости.',
+                'Действия при производственной травме с сотрудниками:\n'
+                '1. Немедленно позвоните заместителю директора Зиновьевой Евгении Васильевне (89505654776). '
+                'Если она недоступна, позвоните директору Матухно Наталье Николаевне (89042015742).\n'
+                '2. Оповестите родителей (законных представителей).\n'
+                '3. Вызовите скорую медицинскую помощь, если это необходимо (03, 103, 112).',
                 create_main_keyboard()
             )
-
-        elif text == 'квиз':
-            # Начало квиза
-            send_message(
-                user_id,
-                'Начнем квиз! Вот первый вопрос:\n' + quiz_questions[0]['question'],
-                create_quiz_keyboard(quiz_questions[0]['options'])
-            )
-            # Логика для обработки ответов и подсчета правильных ответов должна быть добавлена здесь
 
         elif text == 'назад':
             send_message(
@@ -121,30 +111,132 @@ for event in longpoll.listen():
                 create_main_keyboard()
             )
 
-        # Примеры обработки конкретных травм
-        elif text == 'ушиб головы':
+        # Обработка нажатия кнопки «Квиз»
+        elif text == 'квиз':
+            user_quiz_progress[user_id] = {'current_question': 0, 'correct_answers': 0}
+            question_data = quiz_questions[0]
             send_message(
                 user_id,
-                '1. Необходимо незамедлительно позвонить заместителю директора Зиновьевой Евгении Васильевне '
-                '89505654776, если не отвечает директору Матухно Наталье Николаевне 89042015742.\n'
-                '2. Оповестите родителей.\n'
-                '3. Вызовите скорую помощь при необходимости.'
-            )
-            send_message(
-                user_id,
-                'Действия при ушибе головы:\n'
-                '1. Положите ребенка горизонтально.\n'
-                '2. Обеспечьте покой травмированной части.\n'
-                '3. Приложите холод к травмированному участку не более чем на 20 минут.\n'
-                'Возможные симптомы сотрясения мозга:\n'
-                '- головокружение;\n'
-                '- тошнота;\n'
-                '- нарушение координации;\n'
-                '- изменение голоса;\n'
-                '- нарушение слуха.'
+                f'Вопрос 1: {question_data["question"]}',
+                create_quiz_keyboard(question_data['options'])
             )
 
-        # Добавьте аналогичные блоки для других травм
+        # Обработка ответов на вопросы квиза
+        elif user_id in user_quiz_progress:
+            progress = user_quiz_progress[user_id]
+            question_index = progress['current_question']
+            question_data = quiz_questions[question_index]
+
+            # Проверка правильности ответа
+            if text == question_data['options'][question_data['answer']].lower():
+                progress['correct_answers'] += 1
+
+            # Переход к следующему вопросу или окончание квиза
+            if question_index + 1 < len(quiz_questions):
+                progress['current_question'] += 1
+                next_question_data = quiz_questions[progress['current_question']]
+                send_message(
+                    user_id,
+                    f'Вопрос {progress["current_question"] + 1}: {next_question_data["question"]}',
+                    create_quiz_keyboard(next_question_data['options'])
+                )
+            else:
+                correct_answers = progress['correct_answers']
+                send_message(
+                    user_id,
+                    f'Квиз завершен! Вы правильно ответили на {correct_answers} из {len(quiz_questions)} вопросов.',
+                    create_main_keyboard()
+                )
+                del user_quiz_progress[user_id]
+
+        # Обработка конкретных травм у учащихся с добавлением инструкций
+        elif text in ['ушиб головы', 'ушиб ноги', 'носовое кровотечение', 'ушиб руки',
+                      'ушиб позвоночника', 'защемление шеи', 'царапина, порез', 'обморок']:
+            # Универсальная часть перед каждым инструктажем
+            send_message(
+                user_id,
+                '1. Немедленно позвоните заместителю директора Зиновьевой Евгении Васильевне (89505654776). '
+                'Если она недоступна, позвоните директору Матухно Наталье Николаевне (89042015742).\n'
+                '2. Оповестите родителей (законных представителей).\n'
+                '3. Вызовите скорую медицинскую помощь, если это необходимо (03, 103, 112).'
+            )
+
+            # Индивидуальная инструкция по каждой травме
+            if text == 'ушиб головы':
+                send_message(
+                    user_id,
+                    'Действия при ушибе головы:\n'
+                    '1. Положите ребенка в горизонтальное положение.\n'
+                    '2. Обеспечьте покой травмированной части.\n'
+                    '3. Приложите холод к травмированному участку не более чем на 20 минут.'
+                )
+                send_message(
+                    user_id,
+                    'Возможные симптомы сотрясения мозга:\n'
+                    '- Головокружение;\n- Тошнота;\n- Нарушение координации;\n'
+                    '- Изменение речи;\n- Проблемы со слухом.'
+                )
+
+            elif text == 'ушиб ноги':
+                send_message(
+                    user_id,
+                    'Действия при ушибе ноги:\n'
+                    '1. Обеспечьте покой травмированной части.\n'
+                    '2. Приложите холод к травмированному участку не более чем на 20 минут.\n'
+                    '3. Зафиксируйте ногу, если это необходимо.'
+                )
+
+            elif text == 'носовое кровотечение':
+                send_message(
+                    user_id,
+                    'Действия при носовом кровотечении:\n'
+                    '1. Попросите ребенка наклонить голову вперед.\n'
+                    '2. Приложите бинт к ноздрям и прижмите одну ноздрю к носовой перегородке на 5-10 минут.\n'
+                    '3. Приложите холод к области переносицы на 15-20 минут.'
+                )
+
+            elif text == 'ушиб руки':
+                send_message(
+                    user_id,
+                    'Действия при ушибе руки:\n'
+                    '1. Обеспечьте покой травмированной части.\n'
+                    '2. Приложите холод к травмированному участку не более чем на 20 минут.\n'
+                    '3. Зафиксируйте руку, если это необходимо.'
+                )
+
+            elif text == 'ушиб позвоночника':
+                send_message(
+                    user_id,
+                    'Действия при ушибе позвоночника:\n'
+                    '1. Положите пострадавшего на твердую поверхность.\n'
+                    '2. Вызовите скорую медицинскую помощь.'
+                )
+
+            elif text == 'защемление шеи':
+                send_message(
+                    user_id,
+                    'Действия при защемлении шеи:\n'
+                    '1. Положите пострадавшего на твердую поверхность.\n'
+                    '2. Вызовите скорую медицинскую помощь.'
+                )
+
+            elif text == 'царапина, порез':
+                send_message(
+                    user_id,
+                    'Действия при царапине или порезе:\n'
+                    '1. Промойте рану чистой водой.\n'
+                    '2. Наложите лейкопластырь.'
+                )
+
+            elif text == 'обморок':
+                send_message(
+                    user_id,
+                    'Действия при обмороке:\n'
+                    '1. Положите ребенка в горизонтальное положение с приподнятыми ногами.\n'
+                    '2. Обеспечьте приток свежего воздуха.\n'
+                    '3. Ослабьте стесняющую одежду.\n'
+                    '4. Если ребенок не приходит в сознание в течение 3-5 минут, вызовите скорую помощь.'
+                )
 
         else:
             send_message(
