@@ -4,9 +4,6 @@ from vk_api.bot_longpoll import VkBotLongPoll, VkBotEventType
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
 # Инициализация бота
-vk_session = vk_api.VkApi(token='vk1.a.I94bi_Xeu5lQ59AkBxt4O2bkkifXAmLyazWQXGVivVyaiyREJNt_dpXh_EmmIU8LpQB0XL9Vj3EJ2VwqSz9JVoRLEfy2DDuPjGzygJYFm6NUu_n4nba5GDdDnUMBjhre3ixmWib-CVgaqrQkhjkS1yavf_RFCMmqjhUm-g6DXEpDSe7MT3yASLgk_Z7_POrpl7vVE7boqvL4yx-hWAH5Ew')
-vk = vk_session.get_api()
-longpoll = VkBotLongPoll(vk_session, '228157636')
 token = os.getenv("VK_TOKEN")
 group_id = os.getenv("GROUP_ID")
 
