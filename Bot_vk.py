@@ -29,17 +29,19 @@ def create_main_keyboard():
     keyboard.add_button('Назад', color=VkKeyboardColor.SECONDARY)
     return keyboard
 
-# Создание клавиатуры для выбора травм у учащегося
+# Создание клавиатуры для выбора травм у учащегося (аналогичное исправление)
 def create_student_injury_keyboard():
     keyboard = VkKeyboard(one_time=False)
     injuries = ['Ушиб головы', 'Ушиб ноги', 'Носовое кровотечение',
                 'Ушиб руки', 'Ушиб позвоночника', 'Защемление шеи',
                 'Царапина, порез', 'Обморок']
-    for injury in injuries:
+    for i, injury in enumerate(injuries):
         keyboard.add_button(injury, color=VkKeyboardColor.POSITIVE)
-        keyboard.add_line()
+        if (i + 1) % 4 == 0 and i != len(injuries) - 1:
+            keyboard.add_line()
     keyboard.add_button('Назад', color=VkKeyboardColor.SECONDARY)
     return keyboard
+
 
 # Квизовые вопросы
 quiz_questions = [
@@ -63,9 +65,11 @@ quiz_questions = [
 # Функция для создания клавиатуры для квиза
 def create_quiz_keyboard(options):
     keyboard = VkKeyboard(one_time=True)
-    for option in options:
+    for i, option in enumerate(options):
         keyboard.add_button(option, color=VkKeyboardColor.PRIMARY)
-        keyboard.add_line()
+        # Переход на новую строку после каждой кнопки, чтобы гарантировать максимум 4 кнопки в строке
+        if (i + 1) % 4 == 0 and i != len(options) - 1:
+            keyboard.add_line()
     return keyboard
 
 # Основная функция для обработки событий
