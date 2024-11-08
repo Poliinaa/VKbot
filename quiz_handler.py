@@ -32,15 +32,15 @@ def handle_event(event, vk):
         question_index = user_progress[user_id]
         handle_quiz_response(text, vk, user_id, question_index)
         # Переход к следующему вопросу, если есть
-        if question_index + 1 < len(quiz_questions):
-            user_progress[user_id] += 1
-            send_quiz_question(vk, user_id, user_progress[user_id])
-        else:
-            # Опрос завершен, выводим результат
-            correct_count = user_correct_answers[user_id]
-            total_questions = len(quiz_questions)
-            send_message(vk, user_id, f'Опрос завершен! Вы ответили правильно 
-на {correct_count} из {total_questions} вопросов.')
-            # Сбрасываем прогресс пользователя
-            del user_progress[user_id]
-            del user_correct_answers[user_id]
+if question_index + 1 < len(quiz_questions):
+    user_progress[user_id] += 1
+    send_quiz_question(vk, user_id, user_progress[user_id])
+else:
+    # Опрос завершен, выводим результат
+    correct_count = user_correct_answers[user_id]
+    total_questions = len(quiz_questions)
+    send_message(vk, user_id, f'Опрос завершен! Вы ответили правильно на {correct_count} из 
+{total_questions} вопросов.')
+    # Сбрасываем прогресс пользователя
+    del user_progress[user_id]
+    del user_correct_answers[user_id]
